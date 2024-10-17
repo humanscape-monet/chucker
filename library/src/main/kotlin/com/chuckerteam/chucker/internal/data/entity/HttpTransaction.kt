@@ -19,6 +19,9 @@ import com.google.gson.reflect.TypeToken
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Request
+import okhttp3.RequestBody
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.util.Date
 
@@ -164,10 +167,23 @@ internal class HttpTransaction(
         requestHeaders = JsonConverter.instance.toJson(headers)
     }
 
+    // up to apollo3
     fun setGraphQlOperationName(headers: Headers) {
         graphQlOperationName =
             toHttpHeaderList(headers)
                 .find { it.name.lowercase().contains("operation-name") }?.value
+    }
+
+    // over apollo4
+    fun setGraphQlOperationName(body: String, contentType: String?) {
+        if (contentType.orEmpty().contains("json")) {
+            kotlin.runCatching {
+                val json = JSONObject(body)
+                json.getString("operationName")
+            }.onSuccess {
+                graphQlOperationName = it
+            }
+        }
     }
 
     fun getParsedRequestHeaders(): List<HttpHeader>? {
@@ -218,6 +234,7 @@ internal class HttpTransaction(
             contentType.contains("xml", ignoreCase = true) -> FormatUtils.formatXml(body)
             contentType.contains("x-www-form-urlencoded", ignoreCase = true) ->
                 FormatUtils.formatUrlEncodedForm(body)
+
             else -> body
         }
     }
@@ -241,6 +258,7 @@ internal class HttpTransaction(
             contentType.contains("json", ignoreCase = true) && context != null -> {
                 SpanTextUtil(context).spanJson(body)
             }
+
             else -> formatBody(body.toString(), contentType)
         }
     }

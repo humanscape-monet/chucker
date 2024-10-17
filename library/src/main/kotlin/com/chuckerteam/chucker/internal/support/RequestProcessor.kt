@@ -23,6 +23,9 @@ internal class RequestProcessor(
     ) {
         processMetadata(request, transaction)
         processPayload(request, transaction)
+
+        processGraphQlMetaData(request, transaction)
+
         collector.onRequestSent(transaction)
     }
 
@@ -37,12 +40,28 @@ internal class RequestProcessor(
                 setGraphQlOperationName(it)
             }
             populateUrl(request.url)
-            graphQlDetected = isGraphQLRequest(this.graphQlOperationName, request)
 
             requestDate = System.currentTimeMillis()
             method = request.method
             requestContentType = request.body?.contentType()?.toString()
             requestPayloadSize = request.body?.contentLength()
+        }
+    }
+
+    private fun processGraphQlMetaData(
+        request: Request,
+        transaction: HttpTransaction
+    ) {
+        transaction.apply {
+            graphQlOperationName = request.url.queryParameter("query")?.removePrefix("query")
+                ?.takeWhile { it != '(' }?.trim()
+
+            setGraphQlOperationName(
+                requestBody.orEmpty(),
+                requestContentType.orEmpty(),
+            )
+
+            graphQlDetected = isGraphQLRequest(this.graphQlOperationName, request)
         }
     }
 
@@ -67,7 +86,8 @@ internal class RequestProcessor(
                 Logger.error("Failed to read request payload", e)
                 return
             }
-        val limitingSource = LimitingSource(requestSource.uncompress(request.headers), maxContentLength)
+        val limitingSource =
+            LimitingSource(requestSource.uncompress(request.headers), maxContentLength)
 
         val contentBuffer = Buffer().apply { limitingSource.use { writeAll(it) } }
 

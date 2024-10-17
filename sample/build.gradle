@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'com.squareup.wire'
-apply plugin: 'com.apollographql.apollo3'
+apply plugin: 'com.apollographql.apollo'
 
 wire {
     kotlin {}
@@ -90,7 +90,7 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
 
-    implementation "com.apollographql.apollo3:apollo-runtime:$apolloVersion"
+    implementation "com.apollographql.apollo:apollo-runtime:$apolloVersion"
 
     debugImplementation "com.squareup.leakcanary:leakcanary-android:$leakcanaryVersion"
 }
